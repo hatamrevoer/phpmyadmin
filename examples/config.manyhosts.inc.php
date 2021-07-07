@@ -26,8 +26,8 @@ foreach ($hosts as $host) {
     $cfg['Servers'][$i]['controluser']      = 'pma';
     $cfg['Servers'][$i]['controlpass']      = 'pmapass';
     $cfg['Servers'][$i]['auth_type']        = 'cookie';
-    $cfg['Servers'][$i]['user']     = '';
-    $cfg['Servers'][$i]['password'] = '';
+    $cfg['Servers'][$i]['user']     = 'host';
+    $cfg['Servers'][$i]['password'] = 'hatam';
     $cfg['Servers'][$i]['only_db']  = '';
     $cfg['Servers'][$i]['verbose']  = '';
     $cfg['Servers'][$i]['pmadb']    = 'phpmyadmin';
