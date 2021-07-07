@@ -12,22 +12,16 @@
 namespace Symfony\Component\Cache\Traits;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
-use Doctrine\DBAL\DriverManager;
-use Doctrine\DBAL\Exception;
-use Doctrine\DBAL\Exception\TableNotFoundException;
+use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Schema\Schema;
 use Symfony\Component\Cache\Exception\InvalidArgumentException;
-use Symfony\Component\Cache\Marshaller\DefaultMarshaller;
-use Symfony\Component\Cache\Marshaller\MarshallerInterface;
 
 /**
  * @internal
  */
 trait PdoTrait
 {
-    private $marshaller;
     private $conn;
     private $dsn;
     private $driver;
@@ -39,10 +33,9 @@ trait PdoTrait
     private $timeCol = 'item_time';
     private $username = '';
     private $password = '';
-    private $connectionOptions = [];
-    private $namespace;
+    private $connectionOptions = array();
 
-    private function init($connOrDsn, string $namespace, int $defaultLifetime, array $options, ?MarshallerInterface $marshaller)
+    private function init($connOrDsn, $namespace, $defaultLifetime, array $options)
     {
         if (isset($namespace[0]) && preg_match('#[^-+.A-Za-z0-9]#', $namespace, $match)) {
             throw new InvalidArgumentException(sprintf('Namespace contains "%s" but only characters in [-+.A-Za-z0-9] are allowed.', $match[0]));
@@ -50,28 +43,26 @@ trait PdoTrait
 
         if ($connOrDsn instanceof \PDO) {
             if (\PDO::ERRMODE_EXCEPTION !== $connOrDsn->getAttribute(\PDO::ATTR_ERRMODE)) {
-                throw new InvalidArgumentException(sprintf('"%s" requires PDO error mode attribute be set to throw Exceptions (i.e. $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION)).', __CLASS__));
+                throw new InvalidArgumentException(sprintf('"%s" requires PDO error mode attribute be set to throw Exceptions (i.e. $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION))', __CLASS__));
             }
 
             $this->conn = $connOrDsn;
         } elseif ($connOrDsn instanceof Connection) {
             $this->conn = $connOrDsn;
-        } elseif (\is_string($connOrDsn)) {
+        } elseif (is_string($connOrDsn)) {
             $this->dsn = $connOrDsn;
         } else {
-            throw new InvalidArgumentException(sprintf('"%s" requires PDO or Doctrine\DBAL\Connection instance or DSN string as first argument, "%s" given.', __CLASS__, \is_object($connOrDsn) ? \get_class($connOrDsn) : \gettype($connOrDsn)));
+            throw new InvalidArgumentException(sprintf('"%s" requires PDO or Doctrine\DBAL\Connection instance or DSN string as first argument, "%s" given.', __CLASS__, is_object($connOrDsn) ? get_class($connOrDsn) : gettype($connOrDsn)));
         }
 
-        $this->table = $options['db_table'] ?? $this->table;
-        $this->idCol = $options['db_id_col'] ?? $this->idCol;
-        $this->dataCol = $options['db_data_col'] ?? $this->dataCol;
-        $this->lifetimeCol = $options['db_lifetime_col'] ?? $this->lifetimeCol;
-        $this->timeCol = $options['db_time_col'] ?? $this->timeCol;
-        $this->username = $options['db_username'] ?? $this->username;
-        $this->password = $options['db_password'] ?? $this->password;
-        $this->connectionOptions = $options['db_connection_options'] ?? $this->connectionOptions;
-        $this->namespace = $namespace;
-        $this->marshaller = $marshaller ?? new DefaultMarshaller();
+        $this->table = isset($options['db_table']) ? $options['db_table'] : $this->table;
+        $this->idCol = isset($options['db_id_col']) ? $options['db_id_col'] : $this->idCol;
+        $this->dataCol = isset($options['db_data_col']) ? $options['db_data_col'] : $this->dataCol;
+        $this->lifetimeCol = isset($options['db_lifetime_col']) ? $options['db_lifetime_col'] : $this->lifetimeCol;
+        $this->timeCol = isset($options['db_time_col']) ? $options['db_time_col'] : $this->timeCol;
+        $this->username = isset($options['db_username']) ? $options['db_username'] : $this->username;
+        $this->password = isset($options['db_password']) ? $options['db_password'] : $this->password;
+        $this->connectionOptions = isset($options['db_connection_options']) ? $options['db_connection_options'] : $this->connectionOptions;
 
         parent::__construct($namespace, $defaultLifetime);
     }
@@ -84,7 +75,6 @@ trait PdoTrait
      *
      * @throws \PDOException    When the table already exists
      * @throws DBALException    When the table already exists
-     * @throws Exception        When the table already exists
      * @throws \DomainException When an unsupported PDO driver is used
      */
     public function createTable()
@@ -93,31 +83,27 @@ trait PdoTrait
         $conn = $this->getConnection();
 
         if ($conn instanceof Connection) {
-            $types = [
+            $types = array(
                 'mysql' => 'binary',
                 'sqlite' => 'text',
                 'pgsql' => 'string',
                 'oci' => 'string',
                 'sqlsrv' => 'string',
-            ];
+            );
             if (!isset($types[$this->driver])) {
                 throw new \DomainException(sprintf('Creating the cache table is currently not implemented for PDO driver "%s".', $this->driver));
             }
 
             $schema = new Schema();
             $table = $schema->createTable($this->table);
-            $table->addColumn($this->idCol, $types[$this->driver], ['length' => 255]);
-            $table->addColumn($this->dataCol, 'blob', ['length' => 16777215]);
-            $table->addColumn($this->lifetimeCol, 'integer', ['unsigned' => true, 'notnull' => false]);
-            $table->addColumn($this->timeCol, 'integer', ['unsigned' => true]);
-            $table->setPrimaryKey([$this->idCol]);
+            $table->addColumn($this->idCol, $types[$this->driver], array('length' => 255));
+            $table->addColumn($this->dataCol, 'blob', array('length' => 16777215));
+            $table->addColumn($this->lifetimeCol, 'integer', array('unsigned' => true, 'notnull' => false));
+            $table->addColumn($this->timeCol, 'integer', array('unsigned' => true, 'foo' => 'bar'));
+            $table->setPrimaryKey(array($this->idCol));
 
             foreach ($schema->toSql($conn->getDatabasePlatform()) as $sql) {
-                if (method_exists($conn, 'executeStatement')) {
-                    $conn->executeStatement($sql);
-                } else {
-                    $conn->exec($sql);
-                }
+                $conn->exec($sql);
             }
 
             return;
@@ -148,43 +134,7 @@ trait PdoTrait
                 throw new \DomainException(sprintf('Creating the cache table is currently not implemented for PDO driver "%s".', $this->driver));
         }
 
-        if (method_exists($conn, 'executeStatement')) {
-            $conn->executeStatement($sql);
-        } else {
-            $conn->exec($sql);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function prune()
-    {
-        $deleteSql = "DELETE FROM $this->table WHERE $this->lifetimeCol + $this->timeCol <= :time";
-
-        if ('' !== $this->namespace) {
-            $deleteSql .= " AND $this->idCol LIKE :namespace";
-        }
-
-        try {
-            $delete = $this->getConnection()->prepare($deleteSql);
-        } catch (TableNotFoundException $e) {
-            return true;
-        } catch (\PDOException $e) {
-            return true;
-        }
-        $delete->bindValue(':time', time(), \PDO::PARAM_INT);
-
-        if ('' !== $this->namespace) {
-            $delete->bindValue(':namespace', sprintf('%s%%', $this->namespace), \PDO::PARAM_STR);
-        }
-        try {
-            return $delete->execute();
-        } catch (TableNotFoundException $e) {
-            return true;
-        } catch (\PDOException $e) {
-            return true;
-        }
+        $conn->exec($sql);
     }
 
     /**
@@ -193,34 +143,27 @@ trait PdoTrait
     protected function doFetch(array $ids)
     {
         $now = time();
-        $expired = [];
+        $expired = array();
 
-        $sql = str_pad('', (\count($ids) << 1) - 1, '?,');
+        $sql = str_pad('', (count($ids) << 1) - 1, '?,');
         $sql = "SELECT $this->idCol, CASE WHEN $this->lifetimeCol IS NULL OR $this->lifetimeCol + $this->timeCol > ? THEN $this->dataCol ELSE NULL END FROM $this->table WHERE $this->idCol IN ($sql)";
         $stmt = $this->getConnection()->prepare($sql);
         $stmt->bindValue($i = 1, $now, \PDO::PARAM_INT);
         foreach ($ids as $id) {
             $stmt->bindValue(++$i, $id);
         }
-        $result = $stmt->execute();
+        $stmt->execute();
 
-        if (\is_object($result)) {
-            $result = $result->iterateNumeric();
-        } else {
-            $stmt->setFetchMode(\PDO::FETCH_NUM);
-            $result = $stmt;
-        }
-
-        foreach ($result as $row) {
+        while ($row = $stmt->fetch(\PDO::FETCH_NUM)) {
             if (null === $row[1]) {
                 $expired[] = $row[0];
             } else {
-                yield $row[0] => $this->marshaller->unmarshall(\is_resource($row[1]) ? stream_get_contents($row[1]) : $row[1]);
+                yield $row[0] => parent::unserialize(is_resource($row[1]) ? stream_get_contents($row[1]) : $row[1]);
             }
         }
 
         if ($expired) {
-            $sql = str_pad('', (\count($expired) << 1) - 1, '?,');
+            $sql = str_pad('', (count($expired) << 1) - 1, '?,');
             $sql = "DELETE FROM $this->table WHERE $this->lifetimeCol + $this->timeCol <= ? AND $this->idCol IN ($sql)";
             $stmt = $this->getConnection()->prepare($sql);
             $stmt->bindValue($i = 1, $now, \PDO::PARAM_INT);
@@ -241,9 +184,9 @@ trait PdoTrait
 
         $stmt->bindValue(':id', $id);
         $stmt->bindValue(':time', time(), \PDO::PARAM_INT);
-        $result = $stmt->execute();
+        $stmt->execute();
 
-        return (bool) (\is_object($result) ? $result->fetchOne() : $stmt->fetchColumn());
+        return (bool) $stmt->fetchColumn();
     }
 
     /**
@@ -263,15 +206,7 @@ trait PdoTrait
             $sql = "DELETE FROM $this->table WHERE $this->idCol LIKE '$namespace%'";
         }
 
-        try {
-            if (method_exists($conn, 'executeStatement')) {
-                $conn->executeStatement($sql);
-            } else {
-                $conn->exec($sql);
-            }
-        } catch (TableNotFoundException $e) {
-        } catch (\PDOException $e) {
-        }
+        $conn->exec($sql);
 
         return true;
     }
@@ -281,14 +216,10 @@ trait PdoTrait
      */
     protected function doDelete(array $ids)
     {
-        $sql = str_pad('', (\count($ids) << 1) - 1, '?,');
+        $sql = str_pad('', (count($ids) << 1) - 1, '?,');
         $sql = "DELETE FROM $this->table WHERE $this->idCol IN ($sql)";
-        try {
-            $stmt = $this->getConnection()->prepare($sql);
-            $stmt->execute(array_values($ids));
-        } catch (TableNotFoundException $e) {
-        } catch (\PDOException $e) {
-        }
+        $stmt = $this->getConnection()->prepare($sql);
+        $stmt->execute(array_values($ids));
 
         return true;
     }
@@ -296,9 +227,20 @@ trait PdoTrait
     /**
      * {@inheritdoc}
      */
-    protected function doSave(array $values, int $lifetime)
+    protected function doSave(array $values, $lifetime)
     {
-        if (!$values = $this->marshaller->marshall($values, $failed)) {
+        $serialized = array();
+        $failed = array();
+
+        foreach ($values as $id => $value) {
+            try {
+                $serialized[$id] = serialize($value);
+            } catch (\Exception $e) {
+                $failed[] = $id;
+            }
+        }
+
+        if (!$serialized) {
             return $failed;
         }
 
@@ -337,19 +279,7 @@ trait PdoTrait
 
         $now = time();
         $lifetime = $lifetime ?: null;
-        try {
-            $stmt = $conn->prepare($sql);
-        } catch (TableNotFoundException $e) {
-            if (!$conn->isTransactionActive() || \in_array($this->driver, ['pgsql', 'sqlite', 'sqlsrv'], true)) {
-                $this->createTable();
-            }
-            $stmt = $conn->prepare($sql);
-        } catch (\PDOException $e) {
-            if (!$conn->inTransaction() || \in_array($this->driver, ['pgsql', 'sqlite', 'sqlsrv'], true)) {
-                $this->createTable();
-            }
-            $stmt = $conn->prepare($sql);
-        }
+        $stmt = $conn->prepare($sql);
 
         if ('sqlsrv' === $driver || 'oci' === $driver) {
             $stmt->bindParam(1, $id);
@@ -375,24 +305,13 @@ trait PdoTrait
             $insertStmt->bindValue(':time', $now, \PDO::PARAM_INT);
         }
 
-        foreach ($values as $id => $data) {
-            try {
-                $result = $stmt->execute();
-            } catch (TableNotFoundException $e) {
-                if (!$conn->isTransactionActive() || \in_array($this->driver, ['pgsql', 'sqlite', 'sqlsrv'], true)) {
-                    $this->createTable();
-                }
-                $result = $stmt->execute();
-            } catch (\PDOException $e) {
-                if (!$conn->inTransaction() || \in_array($this->driver, ['pgsql', 'sqlite', 'sqlsrv'], true)) {
-                    $this->createTable();
-                }
-                $result = $stmt->execute();
-            }
-            if (null === $driver && !(\is_object($result) ? $result->rowCount() : $stmt->rowCount())) {
+        foreach ($serialized as $id => $data) {
+            $stmt->execute();
+
+            if (null === $driver && !$stmt->rowCount()) {
                 try {
                     $insertStmt->execute();
-                } catch (DBALException | Exception $e) {
+                } catch (DBALException $e) {
                 } catch (\PDOException $e) {
                     // A concurrent write won, let it be
                 }
@@ -408,48 +327,31 @@ trait PdoTrait
     private function getConnection()
     {
         if (null === $this->conn) {
-            if (strpos($this->dsn, '://')) {
-                if (!class_exists(DriverManager::class)) {
-                    throw new InvalidArgumentException(sprintf('Failed to parse the DSN "%s". Try running "composer require doctrine/dbal".', $this->dsn));
-                }
-                $this->conn = DriverManager::getConnection(['url' => $this->dsn]);
-            } else {
-                $this->conn = new \PDO($this->dsn, $this->username, $this->password, $this->connectionOptions);
-                $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            }
+            $this->conn = new \PDO($this->dsn, $this->username, $this->password, $this->connectionOptions);
+            $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         }
         if (null === $this->driver) {
             if ($this->conn instanceof \PDO) {
                 $this->driver = $this->conn->getAttribute(\PDO::ATTR_DRIVER_NAME);
             } else {
-                $driver = $this->conn->getDriver();
-
-                switch (true) {
-                    case $driver instanceof \Doctrine\DBAL\Driver\Mysqli\Driver:
-                        throw new \LogicException(sprintf('The adapter "%s" does not support the mysqli driver, use pdo_mysql instead.', static::class));
-                    case $driver instanceof \Doctrine\DBAL\Driver\AbstractMySQLDriver:
+                switch ($this->driver = $this->conn->getDriver()->getName()) {
+                    case 'mysqli':
+                    case 'pdo_mysql':
+                    case 'drizzle_pdo_mysql':
                         $this->driver = 'mysql';
                         break;
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDOSqlite\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDO\SQLite\Driver:
+                    case 'pdo_sqlite':
                         $this->driver = 'sqlite';
                         break;
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDOPgSql\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDO\PgSQL\Driver:
+                    case 'pdo_pgsql':
                         $this->driver = 'pgsql';
                         break;
-                    case $driver instanceof \Doctrine\DBAL\Driver\OCI8\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDOOracle\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDO\OCI\Driver:
+                    case 'oci8':
+                    case 'pdo_oracle':
                         $this->driver = 'oci';
                         break;
-                    case $driver instanceof \Doctrine\DBAL\Driver\SQLSrv\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDOSqlsrv\Driver:
-                    case $driver instanceof \Doctrine\DBAL\Driver\PDO\SQLSrv\Driver:
+                    case 'pdo_sqlsrv':
                         $this->driver = 'sqlsrv';
-                        break;
-                    default:
-                        $this->driver = \get_class($driver);
                         break;
                 }
             }
@@ -458,7 +360,10 @@ trait PdoTrait
         return $this->conn;
     }
 
-    private function getServerVersion(): string
+    /**
+     * @return string
+     */
+    private function getServerVersion()
     {
         if (null === $this->serverVersion) {
             $conn = $this->conn instanceof \PDO ? $this->conn : $this->conn->getWrappedConnection();

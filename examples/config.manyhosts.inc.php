@@ -1,21 +1,21 @@
 <?php
-
 /**
  * This example configuration shows how to configure phpMyAdmin for
  * many hosts that all have identical configuration otherwise. To add
  * a new host, just drop it into $hosts below. Contributed by
  * Matthew Hawkins.
+ *
+ * @package    PhpMyAdmin
+ * @subpackage Example
  */
 
-declare(strict_types=1);
-
-$i = 0;
-$hosts =  [
-    'foo.example.com',
-    'bar.example.com',
-    'baz.example.com',
-    'quux.example.com',
-];
+$i=0;
+$hosts = array (
+    "foo.example.com",
+    "bar.example.com",
+    "baz.example.com",
+    "quux.example.com",
+);
 
 foreach ($hosts as $host) {
     $i++;
@@ -27,7 +27,7 @@ foreach ($hosts as $host) {
     $cfg['Servers'][$i]['controlpass']      = 'pmapass';
     $cfg['Servers'][$i]['auth_type']        = 'cookie';
     $cfg['Servers'][$i]['user']     = '';
-    $cfg['Servers'][$i]['password'] = 'root';
+    $cfg['Servers'][$i]['password'] = '';
     $cfg['Servers'][$i]['only_db']  = '';
     $cfg['Servers'][$i]['verbose']  = '';
     $cfg['Servers'][$i]['pmadb']    = 'phpmyadmin';

@@ -70,7 +70,7 @@ class TCPDF_FONTS {
 	 * @public static
 	 */
 	public static function addTTFfont($fontfile, $fonttype='', $enc='', $flags=32, $outpath='', $platid=3, $encid=1, $addcbbox=false, $link=false) {
-		if (!TCPDF_STATIC::file_exists($fontfile)) {
+		if (!file_exists($fontfile)) {
 			// Could not find file
 			return false;
 		}
@@ -95,7 +95,7 @@ class TCPDF_FONTS {
 			$outpath = self::_getfontpath();
 		}
 		// check if this font already exist
-		if (@TCPDF_STATIC::file_exists($outpath.$font_name.'.php')) {
+		if (@file_exists($outpath.$font_name.'.php')) {
 			// this font already exist (delete it from fonts folder to rebuild it)
 			return $font_name;
 		}
@@ -557,7 +557,6 @@ class TCPDF_FONTS {
 			$numGlyphs = TCPDF_STATIC::_getUSHORT($font, $offset);
 			// ---------- get CIDToGIDMap ----------
 			$ctg = array();
-			$c = 0;
 			foreach ($encodingTables as $enctable) {
 				// get only specified Platform ID and Encoding ID
 				if (($enctable['platformID'] == $platid) AND ($enctable['encodingID'] == $encid)) {
@@ -666,7 +665,7 @@ class TCPDF_FONTS {
 								$glyphIdArray[$k] = TCPDF_STATIC::_getUSHORT($font, $offset);
 								$offset += 2;
 							}
-							for ($k = 0; $k < $segCount - 1; ++$k) {
+							for ($k = 0; $k < $segCount; ++$k) {
 								for ($c = $startCount[$k]; $c <= $endCount[$k]; ++$c) {
 									if ($idRangeOffset[$k] == 0) {
 										$g = ($idDelta[$k] + $c) % 65536;
@@ -957,7 +956,6 @@ class TCPDF_FONTS {
 			// sfnt version must be 0x00010000 for TrueType version 1.0.
 			return $font;
 		}
-		$c = 0;
 		$offset += 4;
 		// get number of tables
 		$numTables = TCPDF_STATIC::_getUSHORT($font, $offset);
@@ -1545,11 +1543,11 @@ class TCPDF_FONTS {
 	public static function getFontFullPath($file, $fontdir=false) {
 		$fontfile = '';
 		// search files on various directories
-		if (($fontdir !== false) AND @TCPDF_STATIC::file_exists($fontdir.$file)) {
+		if (($fontdir !== false) AND @file_exists($fontdir.$file)) {
 			$fontfile = $fontdir.$file;
-		} elseif (@TCPDF_STATIC::file_exists(self::_getfontpath().$file)) {
+		} elseif (@file_exists(self::_getfontpath().$file)) {
 			$fontfile = self::_getfontpath().$file;
-		} elseif (@TCPDF_STATIC::file_exists($file)) {
+		} elseif (@file_exists($file)) {
 			$fontfile = $file;
 		}
 		return $fontfile;
@@ -1666,7 +1664,6 @@ class TCPDF_FONTS {
 	 * @public static
 	 */
 	public static function unichr($c, $unicode=true) {
-		$c = intval($c);
 		if (!$unicode) {
 			return chr($c);
 		} elseif ($c <= 0x7F) {
@@ -1885,7 +1882,7 @@ class TCPDF_FONTS {
 	 * Converts UTF-8 character to integer value.<br>
 	 * Uses the getUniord() method if the value is not cached.
 	 * @param $uch (string) character string to process.
-	 * @return int Unicode value
+	 * @return integer Unicode value
 	 * @public static
 	 */
 	public static function uniord($uch) {
@@ -1924,7 +1921,7 @@ class TCPDF_FONTS {
 	 *   ---------------------------------------------------------------------
 	 * </pre>
 	 * @param $uch (string) character string to process.
-	 * @return int Unicode value
+	 * @return integer Unicode value
 	 * @author Nicola Asuni
 	 * @public static
 	 */
@@ -1997,7 +1994,7 @@ class TCPDF_FONTS {
 	 * @author Nicola Asuni
 	 * @public static
 	 */
-	public static function UTF8StringToArray($str, $isunicode, &$currentfont) {
+	public static function UTF8StringToArray($str, $isunicode=true, &$currentfont) {
 		if ($isunicode) {
 			// requires PCRE unicode support turned on
 			$chars = TCPDF_STATIC::pregSplit('//','u', $str, -1, PREG_SPLIT_NO_EMPTY);
@@ -2006,11 +2003,7 @@ class TCPDF_FONTS {
 			$chars = str_split($str);
 			$carr = array_map('ord', $chars);
 		}
-		if (is_array($currentfont['subsetchars']) && is_array($carr)) {
-			$currentfont['subsetchars'] += array_fill_keys($carr, true);
-		} else {
-			$currentfont['subsetchars'] = array_merge($currentfont['subsetchars'], $carr);
-		}
+		$currentfont['subsetchars'] += array_fill_keys($carr, true);
 		return $carr;
 	}
 
@@ -2023,7 +2016,7 @@ class TCPDF_FONTS {
 	 * @since 3.2.000 (2008-06-23)
 	 * @public static
 	 */
-	public static function UTF8ToLatin1($str, $isunicode, &$currentfont) {
+	public static function UTF8ToLatin1($str, $isunicode=true, &$currentfont) {
 		$unicode = self::UTF8StringToArray($str, $isunicode, $currentfont); // array containing UTF-8 unicode values
 		return self::UTF8ArrToLatin1($unicode);
 	}
@@ -2039,7 +2032,7 @@ class TCPDF_FONTS {
 	 * @since 1.53.0.TC005 (2005-01-05)
 	 * @public static
 	 */
-	public static function UTF8ToUTF16BE($str, $setbom, $isunicode, &$currentfont) {
+	public static function UTF8ToUTF16BE($str, $setbom=false, $isunicode=true, &$currentfont) {
 		if (!$isunicode) {
 			return $str; // string is not in unicode
 		}
@@ -2059,7 +2052,7 @@ class TCPDF_FONTS {
 	 * @since 2.1.000 (2008-01-08)
 	 * @public static
 	 */
-	public static function utf8StrRev($str, $setbom, $forcertl, $isunicode, &$currentfont) {
+	public static function utf8StrRev($str, $setbom=false, $forcertl=false, $isunicode=true, &$currentfont) {
 		return self::utf8StrArrRev(self::UTF8StringToArray($str, $isunicode, $currentfont), $str, $setbom, $forcertl, $isunicode, $currentfont);
 	}
 
@@ -2076,7 +2069,7 @@ class TCPDF_FONTS {
 	 * @since 4.9.000 (2010-03-27)
 	 * @public static
 	 */
-	public static function utf8StrArrRev($arr, $str, $setbom, $forcertl, $isunicode, &$currentfont) {
+	public static function utf8StrArrRev($arr, $str='', $setbom=false, $forcertl=false, $isunicode=true, &$currentfont) {
 		return self::arrUTF8ToUTF16BE(self::utf8Bidi($arr, $str, $forcertl, $isunicode, $currentfont), $setbom);
 	}
 
@@ -2092,7 +2085,7 @@ class TCPDF_FONTS {
 	 * @since 2.4.000 (2008-03-06)
 	 * @public static
 	 */
-	public static function utf8Bidi($ta, $str, $forcertl, $isunicode, &$currentfont) {
+	public static function utf8Bidi($ta, $str='', $forcertl=false, $isunicode=true, &$currentfont) {
 		// paragraph embedding level
 		$pel = 0;
 		// max level

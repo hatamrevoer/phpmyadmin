@@ -38,17 +38,19 @@ class ArrayNode extends Node
 
     /**
      * Compiles the node to PHP.
+     *
+     * @param Compiler $compiler A Compiler instance
      */
     public function compile(Compiler $compiler)
     {
-        $compiler->raw('[');
+        $compiler->raw('array(');
         $this->compileArguments($compiler);
-        $compiler->raw(']');
+        $compiler->raw(')');
     }
 
     public function evaluate($functions, $values)
     {
-        $result = [];
+        $result = array();
         foreach ($this->getKeyValuePairs() as $pair) {
             $result[$pair['key']->evaluate($functions, $values)] = $pair['value']->evaluate($functions, $values);
         }
@@ -58,12 +60,12 @@ class ArrayNode extends Node
 
     public function toArray()
     {
-        $value = [];
+        $value = array();
         foreach ($this->getKeyValuePairs() as $pair) {
             $value[$pair['key']->attributes['value']] = $pair['value'];
         }
 
-        $array = [];
+        $array = array();
 
         if ($this->isHash($value)) {
             foreach ($value as $k => $v) {
@@ -88,9 +90,9 @@ class ArrayNode extends Node
 
     protected function getKeyValuePairs()
     {
-        $pairs = [];
+        $pairs = array();
         foreach (array_chunk($this->nodes, 2) as $pair) {
-            $pairs[] = ['key' => $pair[0], 'value' => $pair[1]];
+            $pairs[] = array('key' => $pair[0], 'value' => $pair[1]);
         }
 
         return $pairs;

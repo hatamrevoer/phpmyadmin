@@ -77,7 +77,10 @@ class TCPDF_IMAGES {
 			}
 		}
 		if (empty($type)) {
-            $type = strtolower(trim(pathinfo(parse_url($imgfile, PHP_URL_PATH), PATHINFO_EXTENSION)));
+			$fileinfo = pathinfo($imgfile);
+			if (isset($fileinfo['extension']) AND (!TCPDF_STATIC::empty_string($fileinfo['extension']))) {
+				$type = strtolower(trim($fileinfo['extension']));
+			}
 		}
 		if ($type == 'jpg') {
 			$type = 'jpeg';
@@ -158,8 +161,12 @@ class TCPDF_IMAGES {
 	 */
 	public static function _parsejpeg($file) {
 		// check if is a local file
-		if (!@TCPDF_STATIC::file_exists($file)) {
-			return false;
+		if (!@file_exists($file)) {
+			// try to encode spaces on filename
+			$tfile = str_replace(' ', '%20', $file);
+			if (@file_exists($tfile)) {
+				$file = $tfile;
+			}
 		}
 		$a = getimagesize($file);
 		if (empty($a)) {
@@ -308,7 +315,7 @@ class TCPDF_IMAGES {
 					if ($n > 0) {
 						$trns = array();
 						for ($i = 0; $i < $n; ++ $i) {
-							$trns[] = ord($t[$i]);
+							$trns[] = ord($t{$i});
 						}
 					}
 				}
