@@ -3,7 +3,7 @@
  * This is needed for cookie based authentication to encrypt password in
  * cookie
  */
-$cfg['blowfish_secret'] = 'xampp'; /* YOU SHOULD CHANGE THIS FOR A MORE SECURE COOKIE AUTH! */
+$cfg['blowfish_secret'] = ''; /* YOU SHOULD CHANGE THIS FOR A MORE SECURE COOKIE AUTH! */
 
 /*
  * Servers configuration
@@ -24,7 +24,7 @@ $cfg['Servers'][$i]['AllowNoPassword'] = true;
 $cfg['Lang'] = '';
 
 /* Bind to the localhost ipv4 address and tcp */
-$cfg['Servers'][$i]['host'] = '127.0.0.1';
+$cfg['Servers'][$i]['host'] = 'localhost';
 $cfg['Servers'][$i]['connect_type'] = 'tcp';
 
 /* User for advanced features */
