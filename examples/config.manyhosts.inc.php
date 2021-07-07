@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This example configuration shows how to configure phpMyAdmin for
  * many hosts that all have identical configuration otherwise. To add
@@ -26,7 +27,7 @@ foreach ($hosts as $host) {
     $cfg['Servers'][$i]['controlpass']      = 'pmapass';
     $cfg['Servers'][$i]['auth_type']        = 'cookie';
     $cfg['Servers'][$i]['user']     = '';
-    $cfg['Servers'][$i]['password'] = '';
+    $cfg['Servers'][$i]['password'] = 'root';
     $cfg['Servers'][$i]['only_db']  = '';
     $cfg['Servers'][$i]['verbose']  = '';
     $cfg['Servers'][$i]['pmadb']    = 'phpmyadmin';
