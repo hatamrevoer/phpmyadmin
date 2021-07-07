@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Misc stuff and REQUIRED by ALL the scripts.
  * MUST be included by every script
@@ -63,10 +64,8 @@ if (getcwd() == __DIR__) {
  * PHP 5 function, so cannot easily localize this message.
  */
 if (PHP_VERSION_ID < 70103) {
-    die(
-        '<p>PHP 7.1.3+ is required.</p>'
-        . '<p>Currently installed version is: ' . PHP_VERSION . '</p>'
-    );
+    die('<p>PHP 7.1.3+ is required.</p>'
+        . '<p>Currently installed version is: ' . PHP_VERSION . '</p>');
 }
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -84,13 +83,11 @@ require_once ROOT_PATH . 'libraries/vendor_config.php';
 /**
  * Activate autoloader
  */
-if (! @is_readable(AUTOLOAD_FILE)) {
-    die(
-        '<p>File <samp>' . AUTOLOAD_FILE . '</samp> missing or not readable.</p>'
+if (!@is_readable(AUTOLOAD_FILE)) {
+    die('<p>File <samp>' . AUTOLOAD_FILE . '</samp> missing or not readable.</p>'
         . '<p>Most likely you did not run Composer to '
         . '<a href="https://docs.phpmyadmin.net/en/latest/setup.html#installing-from-git">'
-        . 'install library files</a>.</p>'
-    );
+        . 'install library files</a>.</p>');
 }
 require_once AUTOLOAD_FILE;
 
@@ -101,7 +98,7 @@ require_once AUTOLOAD_FILE;
  * See: https://github.com/phpmyadmin/phpmyadmin/issues/16709
  * This value if not used but is usefull, no header logic is used for PDF exports
  */
-if (! defined('K_PATH_IMAGES')) {
+if (!defined('K_PATH_IMAGES')) {
     // phpcs:disable PSR1.Files.SideEffects
     define('K_PATH_IMAGES', ROOT_PATH);
     // phpcs:enable
@@ -157,7 +154,7 @@ register_shutdown_function([Config::class, 'fatalErrorHandler']);
 /**
  * include session handling after the globals, to prevent overwriting
  */
-if (! defined('PMA_NO_SESSION')) {
+if (!defined('PMA_NO_SESSION')) {
     Session::setUp($PMA_Config, $error_handler);
 }
 
@@ -242,7 +239,7 @@ $PMA_Theme = ThemeManager::initializeTheme();
 /** @var DatabaseInterface $dbi */
 $dbi = null;
 
-if (! defined('PMA_MINIMUM_COMMON')) {
+if (!defined('PMA_MINIMUM_COMMON')) {
     /**
      * save some settings in cookies
      *
@@ -256,7 +253,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
     $containerBuilder->set(DatabaseInterface::class, $dbi);
     $containerBuilder->setAlias('dbi', DatabaseInterface::class);
 
-    if (! empty($cfg['Server'])) {
+    if (!empty($cfg['Server'])) {
         $PMA_Config->getLoginCookieValidityFromCache($server);
 
         $auth_plugin = Plugins::getAuthPlugin();
@@ -282,7 +279,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         }
 
         // Sets the default delimiter (if specified).
-        if (! empty($_REQUEST['sql_delimiter'])) {
+        if (!empty($_REQUEST['sql_delimiter'])) {
             Lexer::$DEFAULT_DELIMITER = $_REQUEST['sql_delimiter'];
         }
 
@@ -321,8 +318,9 @@ $containerBuilder->set('theme_manager', ThemeManager::getInstance());
 /* Tell tracker that it can actually work */
 Tracker::enable();
 
-if (! defined('PMA_MINIMUM_COMMON')
-    && ! empty($server)
+if (
+    !defined('PMA_MINIMUM_COMMON')
+    && !empty($server)
     && isset($cfg['ZeroConf'])
     && $cfg['ZeroConf'] == true
 ) {
